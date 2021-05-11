@@ -61,8 +61,8 @@ fastify.post('/command/doorBell',
   {
     config: {
       rateLimit: {
-        max: 1,
-        timeWindow: '3 seconds'
+        max: 20,
+        timeWindow: '1 seconds'
       }
     }
   },
@@ -70,7 +70,7 @@ fastify.post('/command/doorBell',
     clearTimeout(doorbellTimer);
     fastify.io.emit('startCall');
     doorbellTimer = setTimeout(() => {
-      fastify.io.emit('hangUp');
+      fastify.io.emit('endCall');
     }, 60000)
     reply.send({ ok: true })
   })
@@ -90,8 +90,8 @@ fastify.post('/command/unlock', {
 fastify.post('/command/:command', {
   config: {
     rateLimit: {
-      max: 1,
-      timeWindow: '3 seconds'
+      max: 20,
+      timeWindow: '1 seconds'
     }
   }
 }, (req, reply) => {
