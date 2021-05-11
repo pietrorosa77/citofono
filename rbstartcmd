@@ -1,0 +1,8 @@
+
+#!/bin/sh
+/usr/bin/chromium-browser --app=https://pcmansardalinux.homenet.telecomitalia.it:3000/citofono?user=porta \
+  --kiosk --window-size=320,480 --start-maximized --start-fullscreen --noerrdialogs \
+  --disable-session-crashed-bubble \
+  --disable-infobars \
+  --check-for-update-interval=604800 \
+  --disable-pinch

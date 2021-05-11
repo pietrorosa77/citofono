@@ -1,67 +1,59 @@
 
-const defaultOptions = {
-    roomName: 'citofonot',
-    width: 320,
-    height: 350,
-    parentNode: document.querySelector('#meetFrame'),
-    interfaceConfigOverwrite: { TILE_VIEW_MAX_COLUMNS: 2 },
-    configOverwrite: {
-        startWithAudioMuted: true,
-        startWithVideoMuted: true,
-        toolbarButtons: ['microphone', 'tileview', 'settings', 'filmstrip']
-    },
-};
-const domain = 'pcmansardalinux.homenet.telecomitalia.it';
-
 function debounce(func, wait, immediate) {
-    var timeout;
+    let timeout;
     return function () {
-        var context = this, args = arguments;
-        var later = function () {
+        let context = this, args = arguments;
+        const later = function () {
             timeout = null;
             if (!immediate) func.apply(context, args);
         };
-        var callNow = immediate && !timeout;
+        const callNow = immediate && !timeout;
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
         if (callNow) func.apply(context, args);
     };
 };
 
-const commands = {
-    mute: "mute",
-    unmute: "unmute",
-    openCam: "openCam",
-    closeCam: "closeCam",
-    unlock: "unlock"
+function showTime($clockElement, oldTimer){
+    if(oldTimer) {
+        clearTimeout(oldTimer);
+    }
+    const date = new Date();
+    let h = date.getHours(); // 0 - 23
+    let m = date.getMinutes(); // 0 - 59
+    let s = date.getSeconds(); // 0 - 59
+    
+    if(h == 0){
+        h = 12;
+    }
+    
+    
+    h = (h < 10) ? "0" + h : h;
+    m = (m < 10) ? "0" + m : m;
+    s = (s < 10) ? "0" + s : s;
+    
+    const time = `${h}:${m}:${s}`;
+    $clockElement.text(time);
+    $clockElement.addClass("clock");
+    
+    let timer = setTimeout(() => showTime($clockElement,timer), 1000);  
 }
 
+
 class Citofono {
-    constructor($, api, io, ioAddress, remoteControlled, username) {
-        this.$ = $;
-        this.io = io;
-        this.api = api;
-        this.socket = ioAddress ? this.io(ioAddress) : null;
-        this.remoteControlled = remoteControlled || 'citofonoext.homenet.telecomitalia.it';
+    constructor(options) {
+        this.$ = options.$;
+        this.options = options;
+        this.socket = this.options.io(options.ioAddress);
+        this.connected = false;
 
-        this.btnTalk = this.$("#btnTalk");
-        this.btnView = this.$("#btnView");
-        this.btnDoor = this.$("#btnDoor");
-
-        this.setButtonStateFromCommand(this.btnTalk, commands.mute);
-        this.setButtonStateFromCommand(this.btnView, commands.closeCam);
-        this.setButtonStateFromCommand(this.btnDoor, commands.unlock);
-
-        const clickEvent = debounce((e) => {
-            const command = $(e.currentTarget).data("command");
-            this.execUICommand(command);
-        }, 1000, true);
-
-        this.btnTalk.on('click', clickEvent);
-        this.btnView.on('click', clickEvent);
-        this.btnDoor.on('click', clickEvent);
-
-        this.connect(username);
+        this.btnConnect = this.$("#btnConnect");
+        this.btnDoorUnlock = this.$("#btnDoorUnlock");
+        this.clock = this.$("#clock");
+        showTime(this.clock);
+        this.btnConnect.on('click', debounce(this.manualStartCall, 5000, true));
+        this.btnDoorUnlock.on('click', debounce(this.openDoor, 5000, true));
+        window.addEventListener("beforeunload", this.hangUp);
 
         if (this.socket) {
             this.socket.onAny((event) => {
@@ -72,143 +64,66 @@ class Citofono {
         }
     }
 
-    getButtonStateFromCommand = (selCommand) => {
-        let ret = {
-            addClass: "",
-            removeClass: "",
-            command: "",
-            addIconClass: "",
-            removeIconClass: ""
+    startCall = () => {
+        if (!this.connected) {
+            const isExternalUnit = this.options.userName === 'esterno'; 
+            const apiOpts = {
+                width: 320,
+                height: 430,
+                parentNode: document.querySelector('#meetFrame'),
+                roomName: 'citofono',
+                interfaceConfigOverwrite: { TILE_VIEW_MAX_COLUMNS: 2 },
+                configOverwrite: {
+                    startWithAudioMuted: !isExternalUnit,
+                    startWithVideoMuted: !isExternalUnit,
+                    toolbarButtons: ['microphone', 'tileview', 'settings', 'filmstrip', 'hangup']
+                },
+                userInfo: {
+                    email: 'navarosa@navarosa.com',
+                    displayName: this.options.userName
+                }
+            };
+
+            this.jitsiApi = new this.options.jitsiApi(this.options.domain, apiOpts);
+            this.jitsiApi.addListener("readyToClose", this.hangUp);
+            this.connected = true;
+            this.disableCallButton();
         }
-
-        switch (selCommand) {
-            case commands.unmute:
-                ret.command = commands.mute;
-                ret.addClass = "btn-success";
-                ret.removeClass = "btn-secondary";
-                ret.addIconClass = "bi-mic-fill";
-                ret.removeIconClass = "bi-mic-mute-fill";
-                break;
-            case commands.mute:
-                ret.command = commands.unmute;
-                ret.addClass = "btn-secondary";
-                ret.removeClass = "btn-success";
-                ret.addIconClass = "bi-mic-mute-fill";
-                ret.removeIconClass = "bi-mic-fill";
-                break;
-            case commands.openCam:
-                ret.command = commands.closeCam;
-                ret.addClass = "btn-success";
-                ret.removeClass = "btn-secondary";
-                ret.addIconClass = "bi-eye-fill";
-                ret.removeIconClass = "bi-eye-slash-fill";
-                break;
-            case commands.closeCam:
-                ret.command = commands.openCam;
-                ret.addClass = "btn-secondary";
-                ret.removeClass = "btn-success";
-                ret.addIconClass = "bi-eye-slash-fill";
-                ret.removeIconClass = "bi-eye-fill";
-                break;
-            case commands.unlock:
-                ret.command = commands.unlock;
-                ret.addClass = "";
-                ret.removeClass = "";
-                ret.addIconClass = "";
-                ret.removeIconClass = "bi";
-                break;
-        }
-
-        return ret;
-    }
-
-
-    setButtonStateFromCommand = (btn, command) => {
-        const newState = this.getButtonStateFromCommand(command);
-        btn.addClass(newState.addClass);
-        btn.removeClass(newState.removeClass);
-        btn.data("command", newState.command);
-        const icon = btn.find("i");
-        icon.addClass(newState.addIconClass);
-        icon.removeClass(newState.removeIconClass);
-    }
-
-    connect = (displayName) => {
-
-        this.$(window).on("beforeunload", this.disconnect());
-
-        const apiOpts = {
-            ...defaultOptions,
-            userInfo: {
-                email: 'navarosa@navarosa.com',
-                displayName
-            }
-        }
-        this.jitsiApi = new this.api(domain, apiOpts);
-        this.jitsiApi.addListener("readyToClose", this.disconnect);
 
     }
 
-    disconnect = () => {
-        if (this.jitsiApi) {
-            this.jitsiApi.removeListener("readyToClose", this.disconnect);
-            this.$(window).off("beforeunload", this.disconnect());
+    hangUp = () => {
+        if (this.jitsiApi && this.connected) {
+            this.jitsiApi.removeEventListener("readyToClose", this.hangUp);
             this.jitsiApi.dispose();
+            this.enableCallButton();
+            this.connected = false;
+            this.$.post(`${this.options.serverUrl}/command/hangUp`, function (data) {
+                console.log("remot unit command hangup sent", data);
+            }); 
         }
     }
 
-    controlRemote = (command) => {
-        if (this.remoteControlled) {
-            this.$.post(`${this.remoteControlled}/command/${command}`, function (data) {
-                console.log("remot unit command sent", command, data);
-            });
-        }
+    disableCallButton = () => {
+        this.btnConnect.prop("disabled", true);
+        this.btnConnect.addClass("btn-success");
+        
     }
 
-    execUICommand = (command) => {
-        this.controlRemote(command);
-        this[command]();
+    enableCallButton = () => {
+        this.btnConnect.prop("disabled", false);
+        this.btnConnect.removeClass("btn-success");
     }
 
-    mute = () => {
-        this.jitsiApi.isAudioMuted().then(muted => {
-            if (!muted) {
-                this.jitsiApi.executeCommand("toggleAudio");
-            }
-            this.setButtonStateFromCommand(this.btnTalk, commands.mute);
+    openDoor = () => {
+        this.$.post(`${this.options.serverUrl}/command/unlock`, function (data) {
+            console.log("asking to unlock door", data);
         });
     }
 
-    unmute = () => {
-        this.jitsiApi.isAudioMuted().then(muted => {
-            if (muted) {
-                this.jitsiApi.executeCommand("toggleAudio");
-            }
-            this.setButtonStateFromCommand(this.btnTalk, commands.unmute);
-        });
-    }
-
-    openCam = () => {
-
-        this.jitsiApi.isVideoMuted().then(muted => {
-            if (muted) {
-                const result = this.jitsiApi.executeCommand("toggleVideo");
-            }
-            this.setButtonStateFromCommand(this.btnView, commands.openCam);
-        });
-    }
-
-    closeCam = () => {
-        this.jitsiApi.isVideoMuted().then(muted => {
-            if (!muted) {
-                this.jitsiApi.executeCommand("toggleVideo")
-            }
-            this.setButtonStateFromCommand(this.btnView, commands.closeCam);
-        });
-    }
-
-    unlock = () => {
-        //here we just call the remote unit to unlock.
-        // maybe send ui notification
+    manualStartCall = () => {
+        this.$.post(`${this.options.serverUrl}/command/startCall`, function (data) {
+            console.log("manually starting a call", data);
+        }); 
     }
 }

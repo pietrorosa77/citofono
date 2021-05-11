@@ -3,14 +3,14 @@ body {
     margin: 0;
     padding: 0;
     width:320px;
-    height:400px;
+    height:480px;
     background-color:white;
 }
 
 body {
-    background: linear-gradient(-45deg, #383738, #776696, #b8b8b8, #e4e6e5);
+    background: linear-gradient(-45deg, rgb(51, 204, 196), #6c3, #09f, #e4e6e5);
     background-size: 400% 400%;
-    animation: gradient 15s ease infinite;
+    animation: gradient 30s ease infinite;
 }
 
 .container {
@@ -61,7 +61,7 @@ body {
 }
 
 .btn:disabled {
-    cursor:crosshair;
+    cursor:not-allowed;
     opacity: 0.3;
 }
 
@@ -96,3 +96,13 @@ body {
     background-color: #5c636a;
     border-color: #565e64;
 }
+
+.clock {
+    color: #17D4FE;
+    font-size: 16px;
+    font-family: Orbitron;
+    letter-spacing: 2px;
+   width: 90px;
+}
+
+

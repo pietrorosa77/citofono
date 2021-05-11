@@ -41,9 +41,15 @@ fastify.register(require('fastify-static'), {
 fastify.get('/citofono', (req, reply) => {
   fastify.log.info("porta" + process.env.PORT)
   fastify.log.info({ command: req.query.user });
-  const socketIoUrl = req.query.user === 'cancello' ? `${process.env.HTTPS ? 'https' : 'http'}://localhost:${process.env.PORT}` : null;
-  reply.view('/templates/citofono.ejs', { socketIoUrl, remoteControlled: process.env.REMOTE_CONTROLLED, username: req.query.user || 'esterno' })
+  const serverUrl = process.env.IODOMAIN || 'https://pcmansardalinux.homenet.telecomitalia.it:3000';
+  const username = req.query.user || 'altro';
+  reply.view('/templates/citofono.ejs', { 
+    serverUrl,
+    username,
+    domain: process.env.DOMAIN || 'pcmansardalinux.homenet.telecomitalia.it',
+  })
 })
+
 
 fastify.post('/command/unlock', (req, reply) => {
   fastify.log.info("apri cancello");

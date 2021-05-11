@@ -2,14 +2,14 @@
     <head>
         <link rel="stylesheet" href="style.css">
         <link rel="stylesheet" href="icons.css">
+        <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Orbitron" />
     </head>
 <body>
    <div class="container">
     <div class="commands">
-        <button id="btnTalk" type="button" class="btn btn-secondary" ><i class="bi bi-mic-mute-fill" style="font-size: 2rem;"></i></button>
-        <button id="btnView" type="button" class="btn btn-secondary" ><i class="bi bi-eye-slash-fill" style="font-size: 2rem;"></i></button>
-        <button id="btnDoor" type="button" class="btn btn-primary"><i class="bi bi-key-fill" style="font-size: 2rem;"></i></button>
-        
+        <button id="btnConnect" type="button" class="btn btn-primary" ><i class="bi bi-telephone-fill" style="font-size: 2rem;"></i></button>
+        <button id="btnDoorUnlock" type="button" class="btn btn-primary"><i class="bi bi-key-fill" style="font-size: 2rem;"></i></button>
+        <div id="clock"></div>
     </div>
        <div id="meetFrame">
 
@@ -22,13 +22,16 @@
 <script type="text/javascript" src="app.js"></script>
 <script>
     $( document ).ready(function() {
-        const citofono = new Citofono(
+        const options = {
             $,
-            JitsiMeetExternalAPI,
+            jitsiApi: JitsiMeetExternalAPI,
             io,
-            '<%= socketIoUrl %>',
-            '<%= remoteControlled %>',
-            '<%= username %>')
+            ioAddress: '<%= serverUrl %>',
+            serverUrl: '<%= serverUrl %>',
+            userName: '<%= username %>',
+            domain: '<%= domain %>'
+        }
+        const citofono = new Citofono(options)
     });
 </script>
 
