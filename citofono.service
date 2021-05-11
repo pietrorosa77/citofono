@@ -1,0 +1,13 @@
+[Unit]
+Description=citofono
+After=network.target
+
+[Service]
+Type=simple
+User=pietro
+ExecStart=node server.js
+WorkingDirectory=/home/pietro/citofono
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

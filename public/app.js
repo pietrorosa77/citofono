@@ -51,8 +51,8 @@ class Citofono {
         this.btnDoorUnlock = this.$("#btnDoorUnlock");
         this.clock = this.$("#clock");
         showTime(this.clock);
-        this.btnConnect.on('click', debounce(this.manualStartCall, 5000, true));
-        this.btnDoorUnlock.on('click', debounce(this.openDoor, 5000, true));
+        this.btnConnect.on('click', debounce(this.manualStartCall, 1000, true));
+        this.btnDoorUnlock.on('click', debounce(this.openDoor, 1000, true));
         window.addEventListener("beforeunload", this.hangUp);
 
         if (this.socket) {
@@ -76,6 +76,7 @@ class Citofono {
                 configOverwrite: {
                     startWithAudioMuted: !isExternalUnit,
                     startWithVideoMuted: !isExternalUnit,
+                    disableDeepLinking :true,
                     toolbarButtons: ['microphone', 'tileview', 'settings', 'filmstrip', 'hangup']
                 },
                 userInfo: {
@@ -88,12 +89,16 @@ class Citofono {
             this.jitsiApi.addListener("readyToClose", this.hangUp);
             this.connected = true;
             this.disableCallButton();
+            console.log("starting call..")
+        } else {
+            console.log("a call is already in progress....");
         }
 
     }
 
     hangUp = () => {
         if (this.jitsiApi && this.connected) {
+            console.log("hanging up the call....")
             this.jitsiApi.removeEventListener("readyToClose", this.hangUp);
             this.jitsiApi.dispose();
             this.enableCallButton();
@@ -101,6 +106,8 @@ class Citofono {
             this.$.post(`${this.options.serverUrl}/command/hangUp`, function (data) {
                 console.log("remot unit command hangup sent", data);
             }); 
+        } else {
+            console.log("0 active calls....");
         }
     }
 
