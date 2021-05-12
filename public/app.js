@@ -49,7 +49,7 @@ class Citofono {
         this.options = options;
         this.socket = this.options.io(options.ioAddress);
         this.connected = false;
-
+        this.isExternalUnit = this.options.userName === 'esterno';
         this.btnConnect = this.$("#btnConnect");
         this.btnDoorUnlock = this.$("#btnDoorUnlock");
         this.btnHangup = this.$("#btnHangup");
@@ -59,15 +59,7 @@ class Citofono {
         this.btnConnect.on('click', debounce(this.manualStartCall, 1000, true));
         this.btnDoorUnlock.on('click', debounce(this.openDoor, 1000, true));
         this.btnHangup.on('click', debounce(() => this.executeJitsiMeetApiCommand("hangup"), 1000, true));
-        this.btnMic.on('click', debounce(() => {
-            this.executeJitsiMeetApiCommand("toggleAudio");
-            setTimeout(() => {
-                this.jitsiApi.isAudioMuted().then(muted => {
-                    this.setMicButtonStatus(muted);
-                });
-            },500);
-
-        }, 1000, true));
+        this.btnMic.on('click', debounce(() => this.executeJitsiMeetApiCommand("toggleAudio"), 1000, true));
         window.addEventListener("beforeunload", this.endCall);
 
         if (this.socket) {
@@ -81,7 +73,6 @@ class Citofono {
 
     startCall = () => {
         if (!this.connected) {
-            const isExternalUnit = this.options.userName === 'esterno';
             const apiOpts = {
                 width: 320,
                 height: 430,
@@ -89,8 +80,8 @@ class Citofono {
                 roomName: 'citofono',
                 interfaceConfigOverwrite: { TILE_VIEW_MAX_COLUMNS: 2 },
                 configOverwrite: {
-                    startWithAudioMuted: !isExternalUnit,
-                    startWithVideoMuted: !isExternalUnit,
+                    startWithAudioMuted: !this.isExternalUnit,
+                    startWithVideoMuted: !this.isExternalUnit,
                     disableDeepLinking: true,
                     toolbarButtons: [] //['microphone', 'tileview', 'filmstrip', 'hangup']
                 },
@@ -102,10 +93,13 @@ class Citofono {
 
             this.jitsiApi = new this.options.jitsiApi(this.options.domain, apiOpts);
             this.jitsiApi.addListener("readyToClose", this.endCall);
+            this.jitsiApi.addListener("audioMuteStatusChanged", this.muteStatusChanged);
+            this.jitsiApi.addListener("videoConferenceJoined", this.callJoined);
+
             this.connected = true;
 
             console.log("starting call..");
-            this.setButtonsOnCall(!isExternalUnit);
+            this.toggleButtonStatus(this.btnConnect,true);
         } else {
             console.log("a call is already in progress....");
         }
@@ -116,6 +110,8 @@ class Citofono {
         if (this.jitsiApi && this.connected) {
             console.log("hanging up the call....")
             this.jitsiApi.removeEventListener("readyToClose", this.endCall);
+            this.jitsiApi.removeEventListener("audioMuteStatusChanged", this.muteStatusChanged);
+            this.jitsiApi.removeEventListener("videoConferenceJoined", this.callJoined);
             this.jitsiApi.dispose();
             this.setButtonsOffCall();
             this.connected = false;
@@ -131,6 +127,20 @@ class Citofono {
         this.jitsiApi.executeCommand(command);
     }
 
+    muteStatusChanged = (args) => {
+        console.log("mute status changed", args)
+        this.setMicButtonStatus(args.muted);
+    }
+
+    callJoined = (args) => {
+        console.log("call joined", args);
+        this.setButtonsOnCall(!this.isExternalUnit);
+    }
+
+    toggleButtonStatus = (btn, disabled) => {
+        btn.prop("disabled", disabled);
+    }
+
     setButtonsOnCall = (muted) => {
         this.$(".offcall").hide();
         this.setMicButtonStatus(muted);
@@ -140,6 +150,7 @@ class Citofono {
     setButtonsOffCall = () => {
         this.$(".offcall").show();
         this.$(".oncall").hide();
+        this.toggleButtonStatus(this.btnConnect,false);
         this.btnMic.removeClass('btn-secondary btn-success');
         this.btnMic.find('i').removeClass('bi-mic-mute-fill bi-mic-fill');
     }
