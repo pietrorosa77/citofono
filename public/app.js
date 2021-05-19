@@ -74,8 +74,8 @@ class Citofono {
     startCall = () => {
         if (!this.connected) {
             const apiOpts = {
-                width: 320,
-                height: 430,
+                width: '100%',
+                height: '100%',
                 parentNode: document.querySelector('#meetFrame'),
                 roomName: 'citofono',
                 interfaceConfigOverwrite: { TILE_VIEW_MAX_COLUMNS: 2 },

@@ -2,8 +2,8 @@ html,
 body {
     margin: 0;
     padding: 0;
-    width:320px;
-    height:480px;
+    /* width:320px;
+    height:480px; */
     background-color:white;
 }
 
@@ -16,6 +16,9 @@ body {
 .container {
     height: 100%;
     width: 100%
+}
+#meetFrame{
+    height: calc(100% - 50px);
 }
 
 .commands {
