@@ -1,8 +1,33 @@
 
 #!/bin/sh
-/usr/bin/chromium-browser --app=https://pcmansardalinux.homenet.telecomitalia.it:3000/citofono?user=porta \
-  --kiosk --window-size=320,480 --start-maximized --start-fullscreen --noerrdialogs \
-  --disable-session-crashed-bubble \
-  --disable-infobars \
-  --check-for-update-interval=604800 \
-  --disable-pinch
+xset s noblank
+xset s off
+xset -dpms
+/usr/bin/chromium-browser 'https://casanavarosa.ddns.net:3000/citofono?config.disableAGC=true&user=porta' \
+ #--start-maximized \
+ #--start-fullscreen \
+ --noerrdialogs \
+ --disable-session-crashed-bubble \
+ --disable-infobars \
+ --check-for-update-interval=604800 \
+ --disable-pinch
+
+ sudo nano /lib/systemd/system/kiosk.service
+
+ [Unit]
+Description=Chromium Kiosk
+Wants=graphical.target
+After=graphical.target
+
+[Service]
+Environment=DISPLAY=:0.0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+Type=simple
+ExecStart=/bin/bash /home/pi/kiosk.sh
+Restart=on-abort
+User=pi
+Group=pi
+
+[Install]
+WantedBy=graphical.target
+
