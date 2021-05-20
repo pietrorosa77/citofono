@@ -30,3 +30,6 @@ WantedBy=multi-user.target
 /usr/local/etc/no-ip2.conf
 
 4,jr,fEk3dv;_u^
+
+
+RICORDARSI DI SETTARE SU HOSTS corrispondenza casanavarosa.ddns.net e 198.0.1.126 (PC MANSARDA)

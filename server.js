@@ -1,6 +1,8 @@
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config()
+const MQTT = require("async-mqtt");
+const clientMQTT = MQTT.connect('mqtt://casanavarosa.ddns.net')
+require('dotenv').config();
 
 const fastifyOpts = {
   logger: true
@@ -60,7 +62,6 @@ fastify.get('/citofono', (req, reply) => {
   })
 })
 
-let doorbellTimer = 0;
 fastify.post('/command/doorBell',
   {
     config: {
@@ -71,11 +72,7 @@ fastify.post('/command/doorBell',
     }
   },
   (req, reply) => {
-    clearTimeout(doorbellTimer);
-    fastify.io.emit('startCall');
-    doorbellTimer = setTimeout(() => {
-      fastify.io.emit('endCall');
-    }, 60000)
+    handleDoorbellCommand();
     reply.send({ ok: true })
   })
 
@@ -86,8 +83,9 @@ fastify.post('/command/unlock', {
       timeWindow: '3 seconds'
     }
   }
-}, (req, reply) => {
+}, async (req, reply) => {
   fastify.log.info("apri cancello");
+  await clientMQTT.publish('citofono/ext', 'unlock');
   reply.send({ ok: true })
 })
 
@@ -109,17 +107,56 @@ fastify.setErrorHandler(function (error, request, reply) {
   fastify.log.error(error)
   // Send error response
   reply.send({ ok: false })
-})
+});
 
-// Run the server!
-const start = async () => {
-  try {
-    await fastify.listen(process.env.PORT || 3000, "0.0.0.0")
-  } catch (err) {
-    fastify.log.error(err)
-    //process.exit(1)
+const processMqttEvent = (evt) => {
+  fastify.log.info(`got ${evt} MQTT event`);
+  switch (evt) {
+    case 'doorBell':
+      handleDoorbellCommand();
+      break;
+    default:
+      fastify.io.emit(evt);
+      break;
   }
 }
 
 
-start();
+let doorbellTimer = 0;
+const handleDoorbellCommand = () => {
+  clearTimeout(doorbellTimer);
+  fastify.io.emit('startCall');
+  doorbellTimer = setTimeout(() => {
+    fastify.io.emit('endCall');
+  }, 300000);
+}
+
+// Run the server!
+const start = async () => {
+  try {
+    await fastify.listen(process.env.PORT || 3000, "0.0.0.0");
+    await clientMQTT.subscribe('citofono/in');
+    clientMQTT.on('message', async (_topic, message, packet) => {
+      processMqttEvent(message.toString());
+    })
+  } catch (err) {
+    fastify.log.error(err)
+    await clientMQTT.end();
+  }
+}
+
+const exitHandler = async () => {
+  console.log('cleaning up......');
+  await clientMQTT.end();
+  process.exit(0);
+}
+
+process.on('exit', exitHandler);
+//catches ctrl+c event
+process.on('SIGINT', exitHandler);
+// catches "kill pid" (for example: nodemon restart)
+process.on('SIGUSR1', exitHandler);
+process.on('SIGUSR2', exitHandler);
+
+
+clientMQTT.on("connect", start);
