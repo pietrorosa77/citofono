@@ -49,10 +49,14 @@ fastify.get('/citofono', (req, reply) => {
   fastify.log.info({ command: req.query.user });
   const serverUrl = process.env.IODOMAIN || 'https://pcmansardalinux.homenet.telecomitalia.it:3000';
   const username = req.query.user || 'altro';
+  const width = req.query.displayw || '100%';
+  const height = req.query.displayh || '100%';
   reply.view('/templates/citofono.ejs', {
     serverUrl,
     username,
     domain: process.env.DOMAIN || 'pcmansardalinux.homenet.telecomitalia.it',
+    width,
+    height
   })
 })
 

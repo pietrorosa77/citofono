@@ -1,11 +1,4 @@
-html,
-body {
-    margin: 0;
-    padding: 0;
-    /* width:320px;
-    height:480px; */
-    background-color:white;
-}
+
 
 body {
     background: linear-gradient(-45deg, rgb(51, 204, 196), #6c3, #09f, #e4e6e5);

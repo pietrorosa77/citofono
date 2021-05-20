@@ -95,7 +95,7 @@ class Citofono {
             this.jitsiApi.addListener("readyToClose", this.endCall);
             this.jitsiApi.addListener("audioMuteStatusChanged", this.muteStatusChanged);
             this.jitsiApi.addListener("videoConferenceJoined", this.callJoined);
-
+            this.jitsiApi.addListener("participantLeft", this.partecipantLeft);
             this.connected = true;
 
             console.log("starting call..");
@@ -115,11 +115,15 @@ class Citofono {
             this.jitsiApi.dispose();
             this.setButtonsOffCall();
             this.connected = false;
-            this.$.post(`${this.options.serverUrl}/command/endCall`, function (data) {
-                console.log("remot unit command hangup sent", data);
-            });
         } else {
             console.log("0 active calls....");
+        }
+    }
+
+    partecipantLeft = () => {
+        const totPartecipants =  this.jitsiApi.getNumberOfParticipants();
+        if(totPartecipants < 2) {
+            this.executeJitsiMeetApiCommand("hangup");
         }
     }
 
