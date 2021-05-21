@@ -33,3 +33,13 @@ WantedBy=multi-user.target
 
 
 RICORDARSI DI SETTARE SU HOSTS corrispondenza casanavarosa.ddns.net e 198.0.1.126 (PC MANSARDA)
+
+file .env
+
+PORT=3000
+HTTPS=1
+DOMAIN=casadomain.ddns.net
+IODOMAIN=https://casadomain.ddns.net:3000
+MQTTSERVER=mqtt://casadomain.ddns.net
+MQTTUSER=user
+MQTTPSW=password
