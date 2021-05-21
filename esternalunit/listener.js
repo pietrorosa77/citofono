@@ -46,10 +46,10 @@ dorbell.watch(async (err, value) => {
 
 let doorLockTimer = 0;
 const handleUnlockCommand = () => {
-    lock.writeSync(true);
+    lock.writeSync(1);
     doorLockTimer = setTimeout(() => {
-        lock.writeSync(false);
-        clearTimeout(doorbellTimer);
+        lock.writeSync(0);
+        clearTimeout(doorLockTimer);
     }, 500);
 }
 
