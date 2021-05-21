@@ -1,8 +1,12 @@
+require('dotenv').config();
 const Gpio = require('onoff').Gpio;
 const lock = new Gpio(27, 'out');
 const dorbell = new Gpio(22, 'in', 'rising', { debounceTimeout: 10 });
 const MQTT = require("async-mqtt");
-const clientMQTT = MQTT.connect('mqtt://casanavarosa.ddns.net')
+const clientMQTT = MQTT.connect(process.env.MQTTSERVER, {
+    username: process.env.MQTTUSER,
+    password: process.env.MQTTPSW
+});
 
 
 const exitHandler = async () => {
@@ -66,12 +70,12 @@ const start = async () => {
 }
 
 process
-  .on('unhandledRejection', (reason, p) => {
-    console.error(reason, 'Unhandled Rejection at Promise', p);
-  })
-  .on('uncaughtException', err => {
-    console.error(err, 'Uncaught Exception thrown');
-    process.exit(1);
-  });
+    .on('unhandledRejection', (reason, p) => {
+        console.error(reason, 'Unhandled Rejection at Promise', p);
+    })
+    .on('uncaughtException', err => {
+        console.error(err, 'Uncaught Exception thrown');
+        process.exit(1);
+    });
 
 clientMQTT.on("connect", start);

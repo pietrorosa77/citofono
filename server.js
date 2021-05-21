@@ -1,8 +1,12 @@
+require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 const MQTT = require("async-mqtt");
-const clientMQTT = MQTT.connect('mqtt://casanavarosa.ddns.net')
-require('dotenv').config();
+const clientMQTT = MQTT.connect(process.env.MQTTSERVER, {
+  username: process.env.MQTTUSER,
+  password: process.env.MQTTPSW
+});
+
 
 const fastifyOpts = {
   logger: true
