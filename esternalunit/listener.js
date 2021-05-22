@@ -1,4 +1,5 @@
-require('dotenv').config();
+require('dotenv').config({ path: '/home/pi/citofono/.env' });
+const temp = require("pi-temperature");
 const Gpio = require('onoff').Gpio;
 const lock = new Gpio(27, 'out');
 const dorbell = new Gpio(22, 'in', 'rising', { debounceTimeout: 10 });
@@ -8,11 +9,26 @@ const clientMQTT = MQTT.connect(process.env.MQTTSERVER, {
     password: process.env.MQTTPSW
 });
 
+let tempMonitorTimer = 0;
+const measureTemperatrure = () => {
+    temp.measure(async (err, temp) => {
+        clearTimeout(tempMonitorTimer);
+        if (err) console.error(err);
+        else {
+            await clientMQTT.publish('citofono/exttemp', `${temp}`);
+            tempMonitorTimer = setTimeout(() => {
+                measureTemperatrure()
+            }, 5000);
+        }
+    });
+
+}
 
 const exitHandler = async () => {
     console.log('cleaning up......');
     lock.unexport();
     dorbell.unexport();
+    clearTimeout(tempMonitorTimer);
     await clientMQTT.end();
     process.exit(0);
 }
@@ -60,6 +76,7 @@ const handleUnlockCommand = () => {
 const start = async () => {
     try {
         await clientMQTT.subscribe('citofono/ext');
+        measureTemperatrure();
         clientMQTT.on('message', async (_topic, message, packet) => {
             processMqttEvent(message.toString());
         })

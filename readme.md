@@ -34,6 +34,8 @@ WantedBy=multi-user.target
 
 RICORDARSI DI SETTARE SU HOSTS corrispondenza casanavarosa.ddns.net e 198.0.1.126 (PC MANSARDA)
 
+curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
+
 file .env
 
 PORT=3000
