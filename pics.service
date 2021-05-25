@@ -1,0 +1,13 @@
+[Unit]
+Description=poics
+After=network.target
+
+[Service]
+Type=simple
+User=pietro
+ExecStart=
+WorkingDirectory=/home/pietro/PICS
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

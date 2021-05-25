@@ -4,7 +4,7 @@ journalctl --since "2021-05-15 15:00 -u noip.service
 /lib/systemd/system/noip.service
 
 
-journalctl --since "2021-04-23 11:28"  -u seren.service 
+journalctl --since "2021-05-25 17:53"  -u citofono.service 
 sudo systemctl restart seren.service 
 sudo systemctl edit seren.service 
 systemctl daemon-reload
@@ -45,3 +45,5 @@ IODOMAIN=https://casadomain.ddns.net:3000
 MQTTSERVER=mqtt://casadomain.ddns.net
 MQTTUSER=user
 MQTTPSW=password
+
+sudo ln -s citofono.service /lib/systemd/system/citofono.service

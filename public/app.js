@@ -32,7 +32,7 @@ function showTime($clockElement, oldTimer) {
     m = (m < 10) ? "0" + m : m;
     s = (s < 10) ? "0" + s : s;
 
-    const time = `${h}:${m}:${s}`;
+    const time = `${h}:${m}`;
     $clockElement.text(time);
     $clockElement.addClass("clock");
 
@@ -54,11 +54,13 @@ class Citofono {
         this.btnConnect = this.$("#btnConnect");
         this.btnDoorUnlock = this.$("#btnDoorUnlock");
         this.btnHangup = this.$("#btnHangup");
+        this.btnVideo=this.$("#btnVideo");
         this.btnMic = this.$("#btnMic");
         this.clock = this.$("#clock");
         showTime(this.clock);
         this.btnConnect.on('click', debounce(this.manualStartCall, 1000, true));
         this.btnDoorUnlock.on('click', debounce(this.openDoor, 1000, true));
+        this.btnVideo.on('click', debounce(this.manageVideo, 200, true));
         this.btnHangup.on('click', debounce(() => this.executeJitsiMeetApiCommand("hangup"), 1000, true));
         this.btnMic.on('click', debounce(() => this.executeJitsiMeetApiCommand("toggleAudio"), 1000, true));
         window.addEventListener("beforeunload", this.endCall);
@@ -83,7 +85,7 @@ class Citofono {
                 interfaceConfigOverwrite: { TILE_VIEW_MAX_COLUMNS: 2 },
                 configOverwrite: {
                     startWithAudioMuted: !this.isExternalUnit,
-                    startWithVideoMuted: !this.isExternalUnit,
+                    startWithVideoMuted: true,
                     disableDeepLinking: true,
                     toolbarButtons: [] //['microphone', 'tileview', 'filmstrip', 'hangup']
                 },
@@ -138,6 +140,19 @@ class Citofono {
         this.setMicButtonStatus(args.muted);
     }
 
+    manageVideo = () => {
+        const on = !this.btnVideo.hasClass('btn-success');
+        const url = on? this.options.videoUrl : '';
+        this.$("#videoframe").attr('src',url);
+        if(on) {
+            this.$("#cameravd").show();
+        } else {
+            this.$("#cameravd").hide();
+        }
+
+        this.setVideoButtonStatus(on);
+    }
+
     callJoined = (args) => {
         console.log("call joined", args);
         this.setButtonsOnCall(!this.isExternalUnit);
@@ -169,6 +184,17 @@ class Citofono {
         } else {
             this.btnMic.removeClass('btn-secondary').addClass('btn-success');
             $btnIcon.removeClass('bi-mic-mute-fill').addClass('bi-mic-fill');
+        }
+    }
+
+    setVideoButtonStatus = (on) => {
+        const $btnIcon = this.btnVideo.find('i');
+        if(!on) {
+            this.btnVideo.addClass('btn-secondary').removeClass('btn-success');
+            $btnIcon.addClass('bi-camera-video-off-fill').removeClass('bi-camera-video-fill');
+        } else {
+            this.btnVideo.removeClass('btn-secondary').addClass('btn-success');
+            $btnIcon.removeClass('bi-camera-video-off-fill').addClass('bi-camera-video-fill');
         }
     }
 

@@ -93,7 +93,8 @@ fastify.get('/citofono', (req, reply) => {
       domain: process.env.DOMAIN || 'pcmansardalinux.homenet.telecomitalia.it',
       width,
       height,
-      jwt
+      jwt,
+      video:process.env.VIDEO
     })
   }
 })
@@ -180,9 +181,10 @@ const processMqttEvent = (evt) => {
 
 
 let doorbellTimer = 0;
-const handleDoorbellCommand = () => {
+const handleDoorbellCommand = async () => {
   clearTimeout(doorbellTimer);
   fastify.io.emit('startCall');
+  await clientMQTT.publish('citofono/remote', 'https://casanavarosa.ddns.net:3000/citofono?secret=911c7bb8f91e47a4add810d99a8736b4');
   doorbellTimer = setTimeout(() => {
     fastify.io.emit('endCall');
   }, 300000);
