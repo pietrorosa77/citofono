@@ -47,6 +47,7 @@ class Citofono {
     constructor(options) {
         this.$ = options.$;
         this.options = options;
+        this.jwt=options.jwt;
         this.socket = this.options.io(options.ioAddress);
         this.connected = false;
         this.isExternalUnit = this.options.userName === 'esterno';
@@ -76,6 +77,7 @@ class Citofono {
             const apiOpts = {
                 width: '100%',
                 height: '100%',
+                jwt:this.jwt,
                 parentNode: document.querySelector('#meetFrame'),
                 roomName: 'citofono',
                 interfaceConfigOverwrite: { TILE_VIEW_MAX_COLUMNS: 2 },
@@ -171,13 +173,13 @@ class Citofono {
     }
 
     openDoor = () => {
-        this.$.post(`${this.options.serverUrl}/command/unlock`, function (data) {
+        this.$.post(`${this.options.serverUrl}/command/unlock?jwt=${this.jwt}`, function (data) {
             console.log("asking to unlock door", data);
         });
     }
 
     manualStartCall = () => {
-        this.$.post(`${this.options.serverUrl}/command/startCall`, function (data) {
+        this.$.post(`${this.options.serverUrl}/command/startCall?jwt=${this.jwt}`, function (data) {
             console.log("manually starting a call", data);
         });
     }

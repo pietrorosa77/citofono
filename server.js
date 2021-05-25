@@ -1,7 +1,11 @@
 require('dotenv').config();
+const JWT = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const MQTT = require("async-mqtt");
+console.log(process.env.MQTTUSER)
+console.log(process.env.MQTTPSW)
+console.log(process.env.MQTTSERVER)
 const clientMQTT = MQTT.connect(process.env.MQTTSERVER, {
   username: process.env.MQTTUSER,
   password: process.env.MQTTPSW
@@ -49,25 +53,72 @@ fastify.register(require('fastify-static'), {
   root: path.join(__dirname, 'public'),
 });
 
+const createJwt = (username) => {
+  const payload = {
+    "context": {
+      "user": {
+        "avatar": `https://www.gravatar.com/avatar/${username}?d=identicon`,
+        "name": username,
+        "email": `${username}@casanavarosa.ddns.net`,
+        "id": username
+      },
+      "group": "casanavarosa-citofono"
+    },
+    "aud": process.env.JTSIAPPID,
+    "iss": process.env.JTSIAPPID,
+    "sub": "casanavarosa.ddns.net",
+    "room": "*",
+  };
+  return JWT.sign(payload, process.env.JTSIAPPKEY);
+}
 
 fastify.get('/citofono', (req, reply) => {
-  fastify.log.info("porta" + process.env.PORT)
-  fastify.log.info({ command: req.query.user });
-  const serverUrl = process.env.IODOMAIN || 'https://pcmansardalinux.homenet.telecomitalia.it:3000';
-  const username = req.query.user || 'altro';
-  const width = req.query.displayw || '100%';
-  const height = req.query.displayh || '100%';
-  reply.view('/templates/citofono.ejs', {
-    serverUrl,
-    username,
-    domain: process.env.DOMAIN || 'pcmansardalinux.homenet.telecomitalia.it',
-    width,
-    height
-  })
+  const secretKey = req.query.secret;
+  if (secretKey !== process.env.SECRET) {
+    fastify.log.info(`unhauthorized access!!!`, req);
+    reply.code(401);
+    reply.send({ ok: false });
+  } else {
+
+    fastify.log.info({ user: req.query.user });
+    const serverUrl = process.env.IODOMAIN || 'https://pcmansardalinux.homenet.telecomitalia.it:3000';
+    const username = req.query.user || 'altro';
+    const width = req.query.displayw || '100%';
+    const height = req.query.displayh || '100%';
+    const jwt = createJwt(username);
+
+    reply.view('/templates/citofono.ejs', {
+      serverUrl,
+      username,
+      domain: process.env.DOMAIN || 'pcmansardalinux.homenet.telecomitalia.it',
+      width,
+      height,
+      jwt
+    })
+  }
 })
+
+const authApi = (request, reply, done) => {
+  try {
+    const jwt = request.query.jwt;
+    if (!jwt)
+      throw new Error("missing jwt token");
+
+    let decoded = JWT.verify(jwt, process.env.JTSIAPPKEY);
+    fastify.log.error("user authorized", decoded);
+    done();
+  } catch (error) {
+    fastify.log.error(error);
+    reply.code(401);
+    reply.send({ ok: false });
+    done();
+  }
+
+};
 
 fastify.post('/command/doorBell',
   {
+    preHandler: authApi,
     config: {
       rateLimit: {
         max: 20,
@@ -81,6 +132,7 @@ fastify.post('/command/doorBell',
   })
 
 fastify.post('/command/unlock', {
+  preHandler: authApi,
   config: {
     rateLimit: {
       max: 1,
@@ -94,6 +146,7 @@ fastify.post('/command/unlock', {
 })
 
 fastify.post('/command/:command', {
+  preHandler: authApi,
   config: {
     rateLimit: {
       max: 20,
@@ -139,6 +192,7 @@ const handleDoorbellCommand = () => {
 const start = async () => {
   try {
     await fastify.listen(process.env.PORT || 3000, "0.0.0.0");
+    console.log("started!!!!")
     await clientMQTT.subscribe('citofono/in');
     clientMQTT.on('message', async (_topic, message, packet) => {
       processMqttEvent(message.toString());
@@ -148,6 +202,11 @@ const start = async () => {
     await clientMQTT.end();
   }
 }
+
+fastify.addHook('preHandler', (request, reply, done) => {
+  // some code
+  done()
+})
 
 const exitHandler = async () => {
   console.log('cleaning up......');
