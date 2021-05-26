@@ -117,6 +117,22 @@ const authApi = (request, reply, done) => {
 
 };
 
+fastify.post('/alexa',
+  {
+    config: {
+      rateLimit: {
+        max: 20,
+        timeWindow: '1 seconds'
+      }
+    }
+  },
+  async (req, reply) => {
+    fastify.log.info("apri cancello");
+  await clientMQTT.publish('citofono/ext', 'unlock');
+  reply.send({ ok: true })
+    reply.send({ ok: true })
+  })
+
 fastify.post('/command/doorBell',
   {
     preHandler: authApi,
@@ -132,19 +148,20 @@ fastify.post('/command/doorBell',
     reply.send({ ok: true })
   })
 
-fastify.post('/command/unlock', {
-  preHandler: authApi,
-  config: {
-    rateLimit: {
-      max: 1,
-      timeWindow: '3 seconds'
+  fastify.post('/mqtt/:command', {
+    preHandler: authApi,
+    config: {
+      rateLimit: {
+        max: 20,
+        timeWindow: '1 seconds'
+      }
     }
-  }
-}, async (req, reply) => {
-  fastify.log.info("apri cancello");
-  await clientMQTT.publish('citofono/ext', 'unlock');
-  reply.send({ ok: true })
-})
+  }, async (req, reply) => {
+    fastify.log.info({ command: req.params.command });
+    await clientMQTT.publish('citofono/ext', req.params.command);
+    reply.send({ ok: true })
+  })
+
 
 fastify.post('/command/:command', {
   preHandler: authApi,

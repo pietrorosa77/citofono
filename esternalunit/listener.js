@@ -4,6 +4,7 @@ const Gpio = require('onoff').Gpio;
 const lock = new Gpio(27, 'out');
 const dorbell = new Gpio(22, 'in', 'rising', { debounceTimeout: 10 });
 const MQTT = require("async-mqtt");
+const exec = require('child_process').execSync;
 const clientMQTT = MQTT.connect(process.env.MQTTSERVER, {
     username: process.env.MQTTUSER,
     password: process.env.MQTTPSW
@@ -46,6 +47,9 @@ const processMqttEvent = (evt) => {
         case 'unlock':
             handleUnlockCommand();
             break;
+        case 'reboot':
+            handleReboot();
+            break;
         default:
             console.log('command not implemented yet')
             break;
@@ -71,6 +75,12 @@ const handleUnlockCommand = () => {
         lock.writeSync(0);
         clearTimeout(doorLockTimer);
     }, 500);
+}
+
+const handleReboot = () => {
+    console.log("going to reboot.....");
+    const result = exec('sudo /sbin/shutdown -r now');
+    console.log(result.toString());
 }
 
 const start = async () => {

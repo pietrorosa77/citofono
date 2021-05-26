@@ -55,14 +55,16 @@ class Citofono {
         this.btnDoorUnlock = this.$("#btnDoorUnlock");
         this.btnHangup = this.$("#btnHangup");
         this.btnVideo=this.$("#btnVideo");
+        this.restartBtn=this.$("#rebootExternal");
         this.btnMic = this.$("#btnMic");
         this.clock = this.$("#clock");
         showTime(this.clock);
         this.btnConnect.on('click', debounce(this.manualStartCall, 1000, true));
-        this.btnDoorUnlock.on('click', debounce(this.openDoor, 1000, true));
+        this.btnDoorUnlock.on('click', debounce(() => this.executeMqttCommand("unlock"), 1000, true));
         this.btnVideo.on('click', debounce(this.manageVideo, 200, true));
         this.btnHangup.on('click', debounce(() => this.executeJitsiMeetApiCommand("hangup"), 1000, true));
         this.btnMic.on('click', debounce(() => this.executeJitsiMeetApiCommand("toggleAudio"), 1000, true));
+        this.restartBtn.on('click', debounce(() => this.executeMqttCommand("reboot"), 1000, true));
         window.addEventListener("beforeunload", this.endCall);
 
         if (this.socket) {
@@ -145,9 +147,9 @@ class Citofono {
         const url = on? this.options.videoUrl : '';
         this.$("#videoframe").attr('src',url);
         if(on) {
-            this.$("#cameravd").show();
+            this.$("#cameravd").fadeIn();
         } else {
-            this.$("#cameravd").hide();
+            this.$("#cameravd").fadeOut();
         }
 
         this.setVideoButtonStatus(on);
@@ -198,11 +200,12 @@ class Citofono {
         }
     }
 
-    openDoor = () => {
-        this.$.post(`${this.options.serverUrl}/command/unlock?jwt=${this.jwt}`, function (data) {
-            console.log("asking to unlock door", data);
+    executeMqttCommand = (command) => {
+        this.$.post(`${this.options.serverUrl}/mqtt/${command}?jwt=${this.jwt}`, function (data) {
+            console.log("asking to execute mqtt command", command);
         });
     }
+
 
     manualStartCall = () => {
         this.$.post(`${this.options.serverUrl}/command/startCall?jwt=${this.jwt}`, function (data) {

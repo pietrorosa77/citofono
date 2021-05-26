@@ -47,3 +47,13 @@ MQTTUSER=user
 MQTTPSW=password
 
 sudo ln -s citofono.service /lib/systemd/system/citofono.service
+
+
+amzn1.ask.skill.0c5e2061-1c1d-4f5c-9052-e9aa8587a7f8
+
+ location /alexa {
+        proxy_pass https://casanavarosa.ddns.net:3000/alexa;
+    }
+
+
+    alexa chiedi a citofono di casa di aprire
